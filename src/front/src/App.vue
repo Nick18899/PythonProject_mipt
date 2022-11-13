@@ -8,7 +8,7 @@
               <label>Enter some text here:</label>
             </div>
             <div class = "form-group">
-              <BaseInput :value="inputString" type="string" v-model="inputString"/>
+              <BaseInput :value="inputString" @input = "stringCheck" type="string" v-model="inputString"/>
             </div>
             <div class = "form-group">
               <BaseNumberInput :value="inputNumber"  type="number" v-model="inputNumber"/>
@@ -48,6 +48,11 @@ export default {
     }
   },
   methods: {
+    stringCheck: async function() {
+      this.inputString = this.inputString.replaceAll(/[./*+?^${}()|[\]\\]/g, "");
+      console.log(this.inputString);
+    },
+
     sendInputString: async function() {
       //console.log("alpha")
       const resp = await fetch('http://34.88.46.21:5050/gettingTags',{
