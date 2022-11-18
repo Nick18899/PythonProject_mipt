@@ -4,8 +4,13 @@
       <section class = "row justify-content-center">
         <section class = "col-12 col-sm-6 col-md-3 w-50">
           <form :class = "{'form-container-light' :!checked, 'form-container-dark': checked}">
+            <div class="form-group form-check1 form-switch">
+              <BaseFlag @click="switchSendingMethod" id="flexSwitchCheckDefault"></BaseFlag>
+              <label class="form-check-label" for="flexSwitchCheckDefault">{{sendingMethod}}</label>
+            </div>
             <div class = "form-group">
-              <label>Enter some text here:</label>
+              <label style="margin-top: 10px">{{info}}</label>
+              <p style="white-space: pre-line">{{tags}}</p>
             </div>
             <div class = "form-group">
               <BaseInput :value="inputString" @input = "stringCheck" type="string" v-model="inputString"/>
@@ -13,10 +18,8 @@
             <div class = "form-group">
               <BaseNumberInput :value="inputNumber"  type="number" v-model="inputNumber"/>
             </div>
-            <BaseButton @click="sendInputString">Analyze</BaseButton>
+            <BaseButton @click="sendInputString">Send Text/Path</BaseButton>
             <br>
-            <label style="margin-top: 10px">Corresponding hashtags for your text:</label>
-            <p style="white-space: pre-line">{{tags}}</p>
             <div class="form-group form-check1 form-switch">
               <BaseFlag @click="switchOfTheme" id="flexSwitchCheckDefault"></BaseFlag>
               <label class="form-check-label" for="flexSwitchCheckDefault">{{theme}}</label>
@@ -39,34 +42,97 @@ export default {
   components: {BaseFlag, BaseNumberInput, BaseButton, BaseInput},
   data(){
     return {
+      typingString: "",
       inputString: "",
+      inputText: "",
       inputNumber: 1,
       outputString: "",
+      info: "Enter path or text here:",
       tags: " ",
+      method: false,
+      tex: false,
       checked: false,
+      sendingMethod: "Text",
       theme: "Click to choose the dark side"
     }
   },
   methods: {
     stringCheck: async function() {
-      this.inputString = this.inputString.replaceAll(/[./*+?^${}()|[\]\\]/g, "");
-      console.log(this.inputString);
+      if(this.tex) {
+        const resp = await fetch('http://localhost:5050/checkOfInput', {
+          method: "POST",
+          body: JSON.stringify({
+            inputString: this.typingString,
+            currentString: this.inputString
+          }),
+          headers: {
+            "Content-Type": 'application/json'
+          }
+        })
+        const jsn = await resp.json()
+        if(jsn.messege === "new") {
+          if(jsn.newString === "over"){
+            this.tags = "errors: " + jsn.errors + '\n' + "time: " + jsn.time
+          } else {
+            this.tags = jsn.newString
+            this.inputString = ""
+          }
+        } else {
+          this.inputString = jsn.newString
+          console.log(this.inputString);
+        }
+      }
     },
 
     sendInputString: async function() {
-      //console.log("alpha")
-      const resp = await fetch('http://34.88.46.21:5050/gettingTags',{
-        method: "POST",
-        body: JSON.stringify({
-          value: this.inputString,
-          number: this.inputNumber
-        }),
+      if(this.sendingMethod === "Text")  {
+        await fetch('http://localhost:5050/getText',{
+          method: "POST",
+          body: JSON.stringify({
+            value: this.inputString,
+            number: this.inputNumber
+          }),
+          headers: {
+            "Content-Type": 'application/json'
+          }
+        })
+      } else {
+        await fetch('http://localhost:5050/sendPath',{
+          method: "POST",
+          body: JSON.stringify({
+            value: this.inputString,
+            number: this.inputNumber
+          }),
+          headers: {
+            "Content-Type": 'application/json'
+          }
+        })
+      }
+      const resp = await fetch('http://localhost:5050/sendText', {
+        method: "GET",
         headers: {
           "Content-Type": 'application/json'
         }
       })
+      this.inputString = ""
       const jsn = await resp.json()
-      this.tags = jsn.hashtags.join('\n')
+      console.log(jsn.newString)
+      this.tags = jsn.newString
+      this.tex = true
+    },
+    switchSendingMethod: async function(){
+      if(this.sendingMethod == "Text") {
+        this.sendingMethod = "Path"
+      }
+      else{
+        this.sendingMethod = "Text"
+      }
+      if(this.method){
+        this.method = false
+      }
+      else{
+        this.method = true
+      }
     },
     switchOfTheme: async function(){
       if(this.theme == "Click to choose the dark side") {
