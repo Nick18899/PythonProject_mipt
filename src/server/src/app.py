@@ -100,15 +100,6 @@ def sendText():
     return jsonify(newString=getTextViaK(0)[0])
 
 
-@app.route("/gettingTags", methods=['GET', 'POST', 'DELETE', 'PUT'])
-@cross_origin()
-def gettingTags():
-    text = request.get_json()
-    print(text['value'])
-    result = '''searchingTheMostSimilarTwit(text['value'])'''
-    return jsonify(hashtags=result)
-
-
 def main():
     app.run(port=5050, debug=True)
 
